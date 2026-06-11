@@ -21,7 +21,10 @@ htmlcov/
 # Generated data
 *.npz
 *.png
-!assets/readme-banner-v*.png
+!docs/figures/*.png
+!assets/*.png
+benchmarks/results.json
+benchmarks/sensitivity.json
 
 # IDE
 .vscode/
