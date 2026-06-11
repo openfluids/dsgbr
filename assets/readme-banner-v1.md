@@ -5,14 +5,11 @@ Generated asset: `assets/readme-banner-v1.png`
 Tool/model: Built-in `image_gen` tool
 
 Repo analysis:
+
 - DSGBR is a scientific Python package for spectral peak detection in frequency-domain signals.
 - The README and docs emphasize noisy PSDs, a SEARCH/BASELINE ratio, rolling-median baseline separation, and accepted peaks.
 - The proof surface includes deterministic synthetic figures, benchmark comparisons against `scipy.signal.find_peaks`, and parameter-sensitivity documentation.
 - The visual identity should feel like restrained scientific software branding, not generic Python packaging.
-
-Repository homogeneity exceptions:
-- Open Dependabot PR #9, `chore(deps): bump the actions group across 1 directory with 7 updates`, left open for this one-off banner run.
-- Open Dependabot PR #4, `chore(deps-dev): bump the pip-dependencies group with 2 updates`, left open for this one-off banner run.
 
 Prompt:
 
@@ -33,5 +30,6 @@ Output intent: professional README banner suitable for GitHub, saved as assets/r
 ```
 
 Post-processing:
-- Copied the selected generated PNG from `/home/rfrantz/.codex/generated_images/019eb58e-d3b0-7ba0-98e2-db3c21c31cdb/ig_071eae3d56ffacaf016a2a76b3c7a481919f6a6a9e8ed969b6.png` to `assets/readme-banner-v1.png`.
+
+- Saved the selected generated PNG as `assets/readme-banner-v1.png`.
 - No local overlay, crop, resize, or color correction.
