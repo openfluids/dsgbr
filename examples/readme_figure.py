@@ -13,9 +13,12 @@ SEED = 20260611
 N_POINTS = 4096
 F_MIN_HZ = 0.002
 F_MAX_HZ = 1.2
-TRUTH_HZ = np.array([0.0125, 0.045, 0.16, 0.54])
-PEAK_GAINS = np.array([34.0, 48.0, 42.0, 36.0])
-PEAK_WIDTH_DECADES = np.array([0.0045, 0.004, 0.0042, 0.0046])
+# Frequency comb: fundamental plus harmonics, as shed by a periodic wake
+F0_HZ = 0.045
+N_HARMONICS = 10
+TRUTH_HZ = F0_HZ * np.arange(1, N_HARMONICS + 1)
+PEAK_GAINS = 60.0 / np.arange(1, N_HARMONICS + 1) ** 1.2
+PEAK_WIDTH_DECADES = np.full(N_HARMONICS, 0.004)
 NOISE_SIGMA = 0.10
 OUTPUT = Path("docs/figures/readme_detection.png")
 
@@ -70,7 +73,7 @@ def main() -> None:
         label="injected truth",
     )
     ax.set_ylim(ymin, ymax)
-    ax.set_title("DSGBR detection on a noisy synthetic spectrum")
+    ax.set_title("DSGBR detection of a frequency comb in a noisy spectrum")
     ax.set_xlabel("frequency (Hz)")
     ax.set_ylabel("PSD (arbitrary units / Hz)")
     ax.legend(loc="best", frameon=True)
