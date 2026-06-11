@@ -25,7 +25,7 @@ DSGBR_PARAM_ALIASES: dict[str, str] = {
     "DL": "distance_low",
     "DH": "distance_high",
     "SF": "switch_frequency",
-    "MP": "max_detected_peaks",
+    "MP": "max_peaks",
 }
 
 #: Type alias preserved for backward compatibility.

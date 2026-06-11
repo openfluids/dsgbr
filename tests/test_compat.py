@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from dataclasses import fields
 
 import numpy as np
 
@@ -20,6 +21,29 @@ class TestAliases:
         assert DSGBR_PARAM_ALIASES["RT"] == "ratio_threshold"
         assert DSGBR_PARAM_ALIASES["SW"] == "smooth_window"
         assert DSGBR_PARAM_ALIASES["BWF"] == "baseline_window_frac"
+        assert DSGBR_PARAM_ALIASES["DL"] == "distance_low"
+        assert DSGBR_PARAM_ALIASES["DH"] == "distance_high"
+        assert DSGBR_PARAM_ALIASES["SF"] == "switch_frequency"
+        assert DSGBR_PARAM_ALIASES["MP"] == "max_peaks"
+
+    def test_param_aliases_values_are_detection_config_fields(self):
+        config_fields = {field.name for field in fields(DetectionConfig)}
+        assert set(DSGBR_PARAM_ALIASES.values()).issubset(config_fields)
+
+    def test_short_aliases_round_trip_through_case_info(self):
+        samples = {
+            "RT": ("2.5", 2.5),
+            "SW": ("5", 5),
+            "BWF": ("0.02", 0.02),
+            "DL": ("4", 4),
+            "DH": ("3", 3),
+            "SF": ("0.03", 0.03),
+            "MP": ("7", 7),
+        }
+        for short_key, (sample, expected) in samples.items():
+            cfg = DetectionConfig.from_case_info({short_key: sample})
+            field_name = DSGBR_PARAM_ALIASES[short_key]
+            assert getattr(cfg, field_name) == expected
 
     def test_dsgbr_detection_config_is_detection_config(self):
         assert DSGBRDetectionConfig is DetectionConfig

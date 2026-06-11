@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from dsgbr import dsgbr_detector
+from dsgbr import compute_support_series, detect_peaks_case_adaptive, dsgbr_detector
 
 
 class TestTinyInputs:
@@ -61,16 +62,73 @@ class TestExtremeValues:
         f = np.linspace(1e-3, 1.0, 200)
         p = np.ones(200)
         p[50] = np.nan
-        # Should not crash, though results may be unreliable
-        peak_f, _ = dsgbr_detector(f, p)
-        assert isinstance(peak_f, np.ndarray)
+        with pytest.raises(ValueError, match="psd contains 1 non-finite values"):
+            dsgbr_detector(f, p)
 
     def test_inf_in_psd(self):
         f = np.linspace(1e-3, 1.0, 200)
         p = np.ones(200)
         p[50] = np.inf
-        peak_f, _ = dsgbr_detector(f, p)
-        assert isinstance(peak_f, np.ndarray)
+        with pytest.raises(ValueError, match="psd contains 1 non-finite values"):
+            dsgbr_detector(f, p)
+
+
+class TestInvalidInputs:
+    """Invalid detector inputs raise actionable errors."""
+
+    def test_mismatched_lengths_reports_both_lengths(self):
+        f = np.linspace(1e-3, 1.0, 5)
+        p = np.ones(4)
+        with pytest.raises(ValueError, match=r"frequencies length=5, psd length=4"):
+            dsgbr_detector(f, p)
+
+    def test_non_1d_frequencies(self):
+        f = np.array([[0.1, 0.2], [0.3, 0.4]])
+        p = np.ones(4)
+        with pytest.raises(ValueError, match=r"frequencies ndim=2, psd ndim=1"):
+            dsgbr_detector(f, p)
+
+    def test_non_1d_psd(self):
+        f = np.linspace(0.1, 0.4, 4)
+        p = np.ones((2, 2))
+        with pytest.raises(ValueError, match=r"frequencies ndim=1, psd ndim=2"):
+            dsgbr_detector(f, p)
+
+    def test_non_monotonic_frequencies(self):
+        f = np.array([0.1, 0.3, 0.2, 0.4])
+        p = np.ones(4)
+        with pytest.raises(ValueError, match="frequencies must be strictly increasing"):
+            dsgbr_detector(f, p)
+
+    def test_non_finite_frequencies_reports_count(self):
+        f = np.array([0.1, np.nan, np.inf, 0.4])
+        p = np.ones(4)
+        with pytest.raises(ValueError, match="frequencies contains 2 non-finite values"):
+            dsgbr_detector(f, p)
+
+    def test_non_finite_psd_reports_count(self):
+        f = np.linspace(0.1, 0.4, 4)
+        p = np.array([1.0, np.nan, np.inf, 1.0])
+        with pytest.raises(ValueError, match="psd contains 2 non-finite values"):
+            dsgbr_detector(f, p)
+
+    def test_negative_psd(self):
+        f = np.linspace(0.1, 0.4, 4)
+        p = np.array([1.0, 0.0, -0.1, 1.0])
+        with pytest.raises(ValueError, match="psd must be nonnegative"):
+            dsgbr_detector(f, p)
+
+    def test_compute_support_series_inherits_validation(self):
+        f = np.array([0.1, 0.2, 0.2])
+        p = np.ones(3)
+        with pytest.raises(ValueError, match="frequencies must be strictly increasing"):
+            compute_support_series(f, p)
+
+    def test_detect_peaks_case_adaptive_inherits_validation(self):
+        f = np.linspace(0.1, 0.4, 4)
+        p = np.array([1.0, -0.1, 1.0, 1.0])
+        with pytest.raises(ValueError, match="psd must be nonnegative"):
+            detect_peaks_case_adaptive(f, p)
 
 
 class TestNoSmoothing:

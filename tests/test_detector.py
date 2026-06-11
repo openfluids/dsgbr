@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pytest
 
 from dsgbr import compute_support_series, dsgbr_detector
+from dsgbr._config import DetectionConfig
+from dsgbr._detector import _build_baseline_series
 
 
 class TestEmptyAndFlat:
@@ -22,7 +26,7 @@ class TestEmptyAndFlat:
         peak_f, _peak_h, support = dsgbr_detector(f, p, return_support=True)
         assert peak_f.size == 0
         assert support["search_series"].size == 0
-        assert support["detector_config"]["ratio_threshold"] == 1.8
+        assert support["detector_config"]["ratio_threshold"] == 3.3
 
     def test_flat_spectrum_no_peaks(self, flat_spectrum):
         f, p = flat_spectrum
@@ -188,10 +192,52 @@ class TestSmoothingModes:
     def test_smoothing_on_log_vs_linear(self, known_peaks_spectrum):
         f, p, _ = known_peaks_spectrum
         base = {"smooth": "savgol", "SW": 5, "RT": 1.5, "baseline_window": 61}
-        log_f, _ = dsgbr_detector(f, p, case_info={**base, "smooth_on_log": True})
-        lin_f, _ = dsgbr_detector(f, p, case_info={**base, "smooth_on_log": False})
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            log_f, _ = dsgbr_detector(f, p, case_info={**base, "smooth_on_log": True})
+            lin_f, _ = dsgbr_detector(f, p, case_info={**base, "smooth_on_log": False})
         # Both should detect peaks but may differ
         assert log_f.size > 0 or lin_f.size > 0
+        assert np.all(np.isfinite(log_f))
+        assert np.all(np.isfinite(lin_f))
+
+    def test_linear_search_log_baseline_has_no_runtime_warnings(self, known_peaks_spectrum):
+        f, p, _ = known_peaks_spectrum
+        cfg = {"smooth": "savgol", "SW": 5, "smooth_on_log": False, "baseline_on_log": True}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            peak_f, peak_h, support = dsgbr_detector(f, p, case_info=cfg, return_support=True)
+        assert np.all(np.isfinite(peak_f))
+        assert np.all(np.isfinite(peak_h))
+        assert np.all(np.isfinite(support["baseline_series"]))
+        assert np.all(np.isfinite(support["ratio_series"]))
+
+    def test_log_baseline_detects_single_spike_among_zero_bins(self):
+        frequencies = np.linspace(0.1, 1.1, 101)
+        psd = np.zeros(101)
+        psd[50] = 10.0
+
+        peak_f, _peak_h, support = dsgbr_detector(
+            frequencies,
+            psd,
+            case_info={"RT": 1e6, "baseline_window": 21},
+            return_support=True,
+        )
+
+        assert frequencies[50] in peak_f
+        assert support["ratio_series"][50] > 1e6
+
+    def test_log_baseline_matches_rolling_median_for_all_positive_psd(self):
+        psd = np.linspace(0.25, 2.0, 101)
+        cfg = DetectionConfig.from_case_info({"baseline_on_log": True, "baseline_window": 21})
+        baseline = _build_baseline_series(psd, cfg)
+        win, pad = 21, 10
+        padded = np.pad(np.log10(psd), (pad, pad), mode="edge")
+        expected = np.power(
+            10.0,
+            np.array([np.median(padded[i : i + win]) for i in range(psd.size)]),
+        )
+        np.testing.assert_allclose(baseline, expected, rtol=1e-12)
 
 
 class TestComputeSupport:

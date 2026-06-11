@@ -3,7 +3,7 @@
 The five-stage pipeline:
 
 1. Build **SEARCH** series via Savitzky-Golay smoothing of the PSD.
-2. Build **BASELINE** series from a longer-scale smoothing pass.
+2. Build **BASELINE** series from a wide rolling median of the raw PSD.
 3. Accept candidate peaks where SEARCH / BASELINE >= ratio_threshold.
 4. Apply spacing rules and ULF guardrail.
 5. Optionally down-select across frequency bands.
@@ -12,17 +12,18 @@ The five-stage pipeline:
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
+from scipy.ndimage import median_filter
 from scipy.signal import find_peaks, peak_widths, savgol_filter
 
 from dsgbr._config import DetectionConfig
 from dsgbr._selection import select_peaks_by_frequency_bands
 
-try:  # SciPy <1.12 compatibility
-    from scipy.signal import PeakPropertyWarning
-except ImportError:  # pragma: no cover - fallback for older SciPy
+try:  # not re-exported publicly; private module may move between SciPy versions
+    from scipy.signal._peak_finding_utils import PeakPropertyWarning
+except ImportError:  # pragma: no cover - fallback if the private module moves
 
     class PeakPropertyWarning(RuntimeWarning):  # type: ignore[no-redef]
         """Fallback warning class when SciPy does not expose PeakPropertyWarning."""
@@ -60,6 +61,13 @@ def dsgbr_detector(
         ``rthreshold``, ``detector_config``, ``candidate_indices``,
         ``accepted_indices``, ``peak_frequencies``, and ``peak_heights``.
 
+    Raises
+    ------
+    ValueError
+        If non-empty inputs have mismatched lengths, are not one-dimensional,
+        contain non-finite values, have non-increasing frequencies, or contain
+        negative PSD values.
+
     Examples
     --------
     >>> import numpy as np
@@ -79,9 +87,11 @@ def dsgbr_detector(
             else (np.array([]), np.array([]))
         )
 
+    _validate_detector_inputs(frequencies, psd)
+
     cfg = DetectionConfig.from_case_info(case_info)
     search_series = _build_search_series(psd, cfg)
-    baseline_series = _build_baseline_series(search_series, cfg)
+    baseline_series = _build_baseline_series(psd, cfg)
     ratio_series = search_series / np.maximum(baseline_series, 1e-300)
 
     support = _build_support(search_series, baseline_series, ratio_series, cfg)
@@ -107,9 +117,9 @@ def dsgbr_detector(
     # Greedy spacing-aware selection (strongest first)
     order = np.argsort(search_series[candidate_indices])[::-1]
     accepted: list[int] = []
-    low_distance = max(1, int(cfg.distance_low))
-    high_distance = max(1, int(cfg.distance_high))
-    switch_frequency = max(0.0, float(cfg.switch_frequency))
+    low_distance = int(cfg.distance_low)
+    high_distance = int(cfg.distance_high)
+    switch_frequency = float(cfg.switch_frequency)
     for idx in order:
         peak_idx = int(candidate_indices[idx])
         freq = float(frequencies[peak_idx])
@@ -139,7 +149,7 @@ def dsgbr_detector(
     peak_f = frequencies[accepted_idx]
     peak_h = psd[accepted_idx]
 
-    max_peaks = max(1, int(cfg.max_peaks))
+    max_peaks = int(cfg.max_peaks)
     if peak_f.size > max_peaks:
         peak_f, peak_h = select_peaks_by_frequency_bands(
             peak_f,
@@ -203,6 +213,35 @@ def compute_support_series(
 # ---------------------------------------------------------------------------
 
 
+def _validate_detector_inputs(frequencies: np.ndarray, psd: np.ndarray) -> None:
+    """Validate non-empty detector inputs before numeric processing."""
+    if frequencies.size != psd.size:
+        raise ValueError(
+            "frequencies and psd must have the same length "
+            f"(frequencies length={frequencies.size}, psd length={psd.size})"
+        )
+
+    if frequencies.ndim != 1 or psd.ndim != 1:
+        raise ValueError(
+            "frequencies and psd must be one-dimensional "
+            f"(frequencies ndim={frequencies.ndim}, psd ndim={psd.ndim})"
+        )
+
+    bad_frequencies = int(np.count_nonzero(~np.isfinite(frequencies)))
+    if bad_frequencies:
+        raise ValueError(f"frequencies contains {bad_frequencies} non-finite values")
+
+    bad_psd = int(np.count_nonzero(~np.isfinite(psd)))
+    if bad_psd:
+        raise ValueError(f"psd contains {bad_psd} non-finite values")
+
+    if np.any(np.diff(frequencies) <= 0):
+        raise ValueError("frequencies must be strictly increasing")
+
+    if np.any(psd < 0):
+        raise ValueError("psd must be nonnegative")
+
+
 def _build_search_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
     """Construct the SEARCH series by Savitzky-Golay smoothing the PSD.
 
@@ -221,8 +260,6 @@ def _build_search_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
     if cfg.smooth and cfg.smooth.lower() != "none":
         try:
             win = int(cfg.smooth_window)
-            if win % 2 == 0:
-                win += 1
             if win >= 3 and win < len(psd):
                 arr = np.log10(psd + 1e-300) if cfg.smooth_on_log else psd
                 arr = savgol_filter(arr, window_length=win, polyorder=int(cfg.smooth_polyorder))
@@ -233,48 +270,77 @@ def _build_search_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
                 RuntimeWarning,
                 stacklevel=2,
             )
-    return psd.copy()
+    return cast(np.ndarray, psd.copy())
 
 
-def _build_baseline_series(search_series: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
-    """Construct the BASELINE series from the SEARCH series.
+def _build_baseline_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
+    """Construct a peak-robust BASELINE series from the raw PSD.
+
+    The baseline is deliberately decoupled from SEARCH smoothing: it uses a
+    wide rolling median (default ``baseline_window_frac=0.05``, about N/20)
+    directly on the raw PSD rather than on the Savitzky-Golay SEARCH series.
+    The median is the primary robust estimator because narrow peaks occupy a
+    minority of a wide window; a peak-masked Savitzky-Golay pass was rejected as
+    more stateful and harder to calibrate without adding public parameters.
 
     Parameters
     ----------
-    search_series : numpy.ndarray
-        SEARCH series (output of :func:`_build_search_series`).
+    psd : numpy.ndarray
+        Raw power spectral density.
     cfg : DetectionConfig
         Configuration controlling baseline window and domain.
 
     Returns
     -------
     numpy.ndarray
-        BASELINE series (same length as *search_series*).
+        BASELINE series (same length as *psd*).
     """
-    base = search_series
+    base = psd
     if cfg.baseline_on_log:
-        base = np.log10(base + 1e-300)
+        positive_values = base[base > 0]
+        if positive_values.size:
+            min_positive = float(np.min(positive_values))
+            median_positive = float(np.median(positive_values))
+            dtype = np.asarray(base).dtype
+            eps = np.finfo(dtype).eps if np.issubdtype(dtype, np.floating) else np.finfo(float).eps
+            positive_floor = median_positive * float(eps)
+            if not 0.0 < positive_floor < min_positive:
+                positive_floor = float(np.nextafter(min_positive, 0.0))
+        else:
+            positive_floor = 1e-300
+        base = np.log10(np.maximum(base, positive_floor))
     try:
-        if cfg.baseline_window and int(cfg.baseline_window) > 0:
-            win = int(cfg.baseline_window)
-        elif cfg.baseline_window_frac and cfg.baseline_window_frac > 0:
-            win = int(max(7, round(len(search_series) * float(cfg.baseline_window_frac))))
+        win = _baseline_window_length(len(psd), cfg)
+        if win <= 3 or win >= len(psd):
+            base_sm = base.copy()
         else:
-            win = max(15, (len(search_series) // 200) * 2 + 1)
-        if win % 2 == 0:
-            win += 1
-        if 3 < win < len(search_series):
-            base_sm = savgol_filter(base, window_length=win, polyorder=2)
-        else:
-            base_sm = base
-        return np.power(10.0, base_sm) if cfg.baseline_on_log else base_sm
+            # streaming median: avoids the N x win window matrix of a
+            # sliding_window_view approach (O(N*win) memory on long spectra);
+            # mode="nearest" replicates edge values, matching edge padding
+            base_sm = median_filter(base, size=win, mode="nearest")
+        baseline = np.power(10.0, base_sm) if cfg.baseline_on_log else base_sm
+        return cast(np.ndarray, baseline)
     except ValueError as exc:
         warnings.warn(
-            f"BASELINE smoothing failed ({exc}); using raw search series",
+            f"BASELINE estimation failed ({exc}); using raw PSD",
             RuntimeWarning,
             stacklevel=2,
         )
-        return search_series if not cfg.baseline_on_log else np.power(10.0, base)
+        fallback = psd.copy() if not cfg.baseline_on_log else np.power(10.0, base)
+        return cast(np.ndarray, fallback)
+
+
+def _baseline_window_length(n_points: int, cfg: DetectionConfig) -> int:
+    """Return an odd baseline window length independent of SEARCH smoothing."""
+    if cfg.baseline_window and int(cfg.baseline_window) > 0:
+        win = int(cfg.baseline_window)
+    elif cfg.baseline_window_frac and cfg.baseline_window_frac > 0:
+        win = int(max(7, round(n_points * float(cfg.baseline_window_frac))))
+    else:
+        win = max(15, (n_points // 50) * 2 + 1)
+    if win % 2 == 0:
+        win += 1
+    return win
 
 
 def _apply_ulf_guardrail(
@@ -314,7 +380,7 @@ def _apply_ulf_guardrail(
 
     valid_mask = search_series[ul_indices] > 0
     if not np.any(valid_mask):
-        return indices[~ul_mask]
+        return cast(np.ndarray, indices[~ul_mask])
 
     target_indices = ul_indices[valid_mask]
     with warnings.catch_warnings():
@@ -322,11 +388,11 @@ def _apply_ulf_guardrail(
         widths, _, _, _ = peak_widths(search_series, target_indices, rel_height=0.5)
 
     if widths.size == 0:
-        return indices[~ul_mask]
+        return cast(np.ndarray, indices[~ul_mask])
 
     positive_widths = widths > 0
     if not np.any(positive_widths):
-        return indices[~ul_mask]
+        return cast(np.ndarray, indices[~ul_mask])
 
     target_indices = target_indices[positive_widths]
     widths = widths[positive_widths]
@@ -336,9 +402,9 @@ def _apply_ulf_guardrail(
     keep = q_vals >= cfg.ulf_min_q
     ul_indices = target_indices[keep]
     if ul_indices.size == 0:
-        return indices[~ul_mask]
+        return cast(np.ndarray, indices[~ul_mask])
 
-    cap = max(0, int(cfg.ulf_max_points))
+    cap = int(cfg.ulf_max_points)
     if cap and ul_indices.size > cap:
         order = np.argsort(search_series[ul_indices])[::-1][:cap]
         ul_indices = ul_indices[order]

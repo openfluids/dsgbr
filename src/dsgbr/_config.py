@@ -6,6 +6,7 @@ all tunable parameters for the five-stage DSGBR detection pipeline.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -13,6 +14,10 @@ from typing import Any
 @dataclass(frozen=True)
 class DetectionConfig:
     """Configuration for the DSGBR detector.
+
+    Direct construction is strict and raises for invalid values.  The
+    :meth:`from_case_info` dict path is intentionally permissive for legacy
+    inputs and drops non-positive ``baseline_window`` values before validation.
 
     Parameters are organized by function:
 
@@ -38,7 +43,7 @@ class DetectionConfig:
         Fixed window size for baseline smoothing.  Overrides
         ``baseline_window_frac`` when set.
     baseline_window_frac : float
-        Baseline window as fraction of data length (e.g. 0.001 = 0.1%).
+        Baseline window as fraction of data length (e.g. 0.05 = 5%).
         Commonly abbreviated as **BWF**.
     baseline_on_log : bool
         Apply baseline smoothing to log10(SEARCH) instead of linear SEARCH.
@@ -94,14 +99,14 @@ class DetectionConfig:
     baseline_window: int | None = None
     """Fixed window size for baseline smoothing (overrides baseline_window_frac)."""
 
-    baseline_window_frac: float = 0.001
+    baseline_window_frac: float = 0.05
     """Baseline window as fraction of data length."""
 
     baseline_on_log: bool = True
     """Apply baseline smoothing to log10(SEARCH) instead of linear SEARCH."""
 
     # ==================== DETECTION PARAMETERS ====================
-    ratio_threshold: float = 1.8
+    ratio_threshold: float = 3.3
     """Minimum SEARCH/BASELINE ratio for peak acceptance (>= 1.0)."""
 
     # ==================== SPACING PARAMETERS ====================
@@ -151,11 +156,35 @@ class DetectionConfig:
         if self.smooth_window % 2 == 0:
             msg = f"smooth_window must be odd, got {self.smooth_window}"
             raise ValueError(msg)
+        if self.smooth_polyorder < 0:
+            msg = f"smooth_polyorder must be >= 0, got {self.smooth_polyorder}"
+            raise ValueError(msg)
         if self.smooth_polyorder >= self.smooth_window:
             msg = (
                 f"smooth_polyorder ({self.smooth_polyorder}) must be "
                 f"< smooth_window ({self.smooth_window})"
             )
+            raise ValueError(msg)
+        if self.baseline_window_frac <= 0 or self.baseline_window_frac > 1:
+            msg = f"baseline_window_frac must be > 0 and <= 1, got {self.baseline_window_frac}"
+            raise ValueError(msg)
+        if self.baseline_window is not None and self.baseline_window <= 3:
+            msg = f"baseline_window must be > 3 when set, got {self.baseline_window}"
+            raise ValueError(msg)
+        if self.switch_frequency < 0:
+            msg = f"switch_frequency must be >= 0, got {self.switch_frequency}"
+            raise ValueError(msg)
+        if self.distance_low < 1:
+            msg = f"distance_low must be >= 1, got {self.distance_low}"
+            raise ValueError(msg)
+        if self.distance_high < 1:
+            msg = f"distance_high must be >= 1, got {self.distance_high}"
+            raise ValueError(msg)
+        if self.ulf_min_q < 0:
+            msg = f"ulf_min_q must be >= 0, got {self.ulf_min_q}"
+            raise ValueError(msg)
+        if self.ulf_max_points < 0:
+            msg = f"ulf_max_points must be >= 0, got {self.ulf_max_points}"
             raise ValueError(msg)
         if self.max_peaks < 1:
             msg = f"max_peaks must be >= 1, got {self.max_peaks}"
@@ -163,16 +192,31 @@ class DetectionConfig:
         if self.n_bands < 1:
             msg = f"n_bands must be >= 1, got {self.n_bands}"
             raise ValueError(msg)
+        if self.band_strategy not in {"proportional", "equal"}:
+            msg = f"band_strategy must be 'proportional' or 'equal', got {self.band_strategy!r}"
+            raise ValueError(msg)
 
     @classmethod
-    def from_case_info(cls, case_info: Any | None) -> DetectionConfig:
+    def from_case_info(
+        cls, case_info: Any | None, *, on_unknown: str = "ignore"
+    ) -> DetectionConfig:
         """Construct a :class:`DetectionConfig` from a dict with alias support.
+
+        Unlike direct construction, this permissive legacy dict path drops
+        non-positive ``baseline_window`` values before strict validation. Values
+        that cannot be converted are ignored with a warning so typoed values are
+        visible while shared-dict callers can continue passing foreign entries.
+        Unknown keys are ignored by default, or reported in one warning when
+        ``on_unknown="warn"``.
 
         Parameters
         ----------
         case_info : dict or None
             Dictionary of parameter values, optionally using short aliases
             (``RT``, ``SW``, ``BWF``, ``DH``, ``DL``, ``SF``, ``MP``).
+        on_unknown : {"ignore", "warn"}, default "ignore"
+            Whether to ignore unrecognized keys silently or warn with a sorted
+            list of keys not matching any supported alias.
 
         Returns
         -------
@@ -185,6 +229,10 @@ class DetectionConfig:
         >>> cfg.ratio_threshold
         2.0
         """
+        if on_unknown not in {"ignore", "warn"}:
+            msg = "on_unknown must be 'ignore' or 'warn'"
+            raise ValueError(msg)
+
         if not isinstance(case_info, dict) or not case_info:
             return cls()
 
@@ -227,13 +275,30 @@ class DetectionConfig:
             "n_bands": (int, ("n_bands",)),
         }
 
+        known_keys = {key for _, keys in aliases.values() for key in keys}
+        if on_unknown == "warn":
+            unknown_keys = sorted(set(case_info) - known_keys)
+            if unknown_keys:
+                warnings.warn(
+                    "dsgbr: ignoring unrecognized case_info keys: "
+                    + ", ".join(repr(key) for key in unknown_keys),
+                    UserWarning,
+                    stacklevel=2,
+                )
+
         data: dict[str, Any] = {}
         for field, (dtype, keys) in aliases.items():
             for key in keys:
                 if key in case_info:
                     try:
                         value = _convert(case_info[key], dtype)
-                    except (TypeError, ValueError):
+                    except (TypeError, ValueError) as exc:
+                        warnings.warn(
+                            f"dsgbr: ignoring invalid value for {key!r}: "
+                            f"{case_info[key]!r} ({exc})",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                         continue
                     else:
                         data[field] = value

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from dsgbr import dsgbr_detector
 from dsgbr._config import DetectionConfig
@@ -70,12 +71,10 @@ class TestBuildBaselineSeries:
         result = _build_baseline_series(search, cfg)
         assert result.shape == search.shape
 
-    def test_fallback_window_calculation(self):
-        """Neither baseline_window nor baseline_window_frac > 0."""
-        search = np.random.default_rng(4).uniform(0.5, 2.0, size=500)
-        cfg = DetectionConfig(baseline_window_frac=0.0)
-        result = _build_baseline_series(search, cfg)
-        assert result.shape == search.shape
+    def test_baseline_window_frac_zero_rejected(self):
+        """baseline_window_frac=0 is rejected at configuration construction."""
+        with pytest.raises(ValueError, match="baseline_window_frac must be"):
+            DetectionConfig(baseline_window_frac=0.0)
 
     def test_baseline_on_linear(self):
         """baseline_on_log=False path."""
