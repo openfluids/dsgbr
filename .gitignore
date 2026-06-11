@@ -21,6 +21,7 @@ htmlcov/
 # Generated data
 *.npz
 *.png
+!assets/readme-banner-v*.png
 
 # IDE
 .vscode/

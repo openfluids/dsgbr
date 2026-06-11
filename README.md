@@ -1,15 +1,14 @@
-# DSGBR
+![DSGBR banner](assets/readme-banner-v1.png)
 
-[![CI](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ricardofrantz/dsgbr/branch/master/graph/badge.svg)](https://codecov.io/gh/ricardofrantz/dsgbr)
 [![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
+[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/ricardofrantz/dsgbr#readme)
+[![CI](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Dual Savitzky-Golay Baseline Ratio (DSGBR)** is a spectral peak detector
-for frequency-domain signals. It was designed for robust detection in dense,
-noisy power spectra common in fluid dynamics, vibration analysis, and other
-experimental sciences.
+**Dual Savitzky-Golay Baseline Ratio (DSGBR)** detects spectral peaks in
+frequency-domain signals. It is built for dense, noisy power spectra from fluid
+dynamics, vibration analysis, and related experimental work.
 
 ## Algorithm
 
