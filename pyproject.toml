@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dsgbr"
-version = "0.1.2"
+version = "0.2.0"
 description = "Dual Savitzky–Golay Baseline Ratio (DSGBR) spectral peak detector"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -59,6 +59,7 @@ qa = [
     "mypy>=1.11.0",
     "pre-commit>=3.8.0",
     "ruff>=0.7.0",
+    "scipy-stubs>=1.10",
 ]
 dev = [
     "build",
@@ -72,6 +73,7 @@ dev = [
     "pytest-rerunfailures==16.1",
     "pytest-xdist==3.8.0",
     "ruff>=0.7.0",
+    "scipy-stubs>=1.10",
     "twine",
 ]
 

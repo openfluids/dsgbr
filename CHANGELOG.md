@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0] - 2026-06-11
+
+### Added
+
+- Validation section in the README with measured benchmark F1 scores against tuned `scipy.signal.find_peaks` and a reproduction command.
+- README hero figure showing detection on a noisy synthetic spectrum with default parameters (`examples/readme_figure.py`).
+
+### Fixed
+
+- Rebuild the detector baseline as a wide rolling median of the raw PSD, decoupled from search smoothing and more robust to narrow peaks.
+- Recalibrate default detection thresholds for synthetic clean-tone detection with low false positives on no-peak controls.
+
 ## [0.1.2] - 2026-02-13
 
 ### Added
