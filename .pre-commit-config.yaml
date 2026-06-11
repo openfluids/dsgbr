@@ -30,6 +30,10 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
+        additional_dependencies:
+          - numpy>=1.24
+          - scipy>=1.10
+          - scipy-stubs>=1.10
         exclude: ^(docs/conf\.py|tests/|examples/)
 
   - repo: https://github.com/codespell-project/codespell
