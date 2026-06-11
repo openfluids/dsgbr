@@ -9,7 +9,7 @@ import numpy as np
 
 from dsgbr import dsgbr_detector
 
-SEED = 20260611
+SEED = 29
 N_POINTS = 4096
 F_MIN_HZ = 0.002
 F_MAX_HZ = 1.2
@@ -17,9 +17,9 @@ F_MAX_HZ = 1.2
 F0_HZ = 0.045
 N_HARMONICS = 10
 TRUTH_HZ = F0_HZ * np.arange(1, N_HARMONICS + 1)
-PEAK_GAINS = 60.0 / np.arange(1, N_HARMONICS + 1) ** 1.2
+PEAK_GAINS = 26.0 / np.arange(1, N_HARMONICS + 1) ** 0.9
 PEAK_WIDTH_DECADES = np.full(N_HARMONICS, 0.004)
-NOISE_SIGMA = 0.10
+NOISE_SIGMA = 0.30
 OUTPUT = Path("docs/figures/readme_detection.png")
 
 
