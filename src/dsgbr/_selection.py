@@ -104,17 +104,17 @@ def select_peaks_by_frequency_bands(
 
     candidates: list[np.ndarray] = []
     for i in range(bands):
-        # The first band absorbs everything at or below its lower edge, including
-        # non-positive frequencies, and the last band is closed on the right.  With
-        # half-open bands on both ends a peak sitting exactly on freq_max, or below
-        # the clamped lower edge, matches no band and is silently discarded.
+        # The outer bands are unbounded so that every peak lands in exactly one band.
+        # Bounding them invites silent drops: peaks below the clamped lower edge match
+        # nothing, and the upper edge is 10**log10(freq_max), which does not always
+        # round-trip to freq_max, so even a closed `<=` can exclude the largest peak.
         above = (
             np.ones(peak_frequencies.shape, dtype=bool)
             if i == 0
             else peak_frequencies >= band_edges[i]
         )
         below = (
-            peak_frequencies <= band_edges[i + 1]
+            np.ones(peak_frequencies.shape, dtype=bool)
             if i == bands - 1
             else peak_frequencies < band_edges[i + 1]
         )

@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Restore the highest-frequency peak to band down-selection. The top band was half-open on the right while its upper edge equalled the maximum frequency, so a peak sitting exactly on that edge matched no band and was silently discarded.
+- Restore the highest-frequency peak to band down-selection. The top band was half-open on the right while its upper edge equalled the maximum frequency, so a peak sitting exactly on that edge matched no band and was silently discarded. The outer bands are now unbounded, since the upper edge is `10 ** log10(freq_max)` and does not always round-trip to `freq_max` — a closed comparison alone still dropped the largest peak for values such as 3.7 and 987.654321.
 - Rank the over-budget truncation in `select_peaks_by_frequency_bands` by amplitude instead of slicing a frequency-sorted array, which had kept the lowest frequencies regardless of strength.
 - Stop the one-slot-per-band floor from exceeding `max_peaks` when `n_bands > max_peaks`, which forced a truncation that discarded peaks the allotment had already promised.
 - Re-apply the minimum-separation rule after peak refinement. Hill-climbing towards raw-PSD maxima could pull two legally spaced peaks closer than `distance_low`/`distance_high`.

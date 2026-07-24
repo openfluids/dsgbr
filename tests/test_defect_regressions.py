@@ -25,9 +25,7 @@ class TestBandSelection:
         freqs = np.array([1e-3, 1e-2, 1e-1, 1.0])
         heights = np.array([10.0, 20.0, 30.0, 99.0])  # strongest peak is at freq_max
 
-        sel_f, sel_h = select_peaks_by_frequency_bands(
-            freqs, heights, max_peaks=3, n_bands=3
-        )
+        sel_f, sel_h = select_peaks_by_frequency_bands(freqs, heights, max_peaks=3, n_bands=3)
 
         assert 1.0 in sel_f
         assert sel_h.max() == pytest.approx(99.0)
@@ -44,9 +42,7 @@ class TestBandSelection:
         freqs = np.logspace(-3, 0, 10)
         heights = np.linspace(1.0, 10.0, 10)  # amplitude grows with frequency
 
-        sel_f, sel_h = select_peaks_by_frequency_bands(
-            freqs, heights, max_peaks=3, n_bands=10
-        )
+        sel_f, sel_h = select_peaks_by_frequency_bands(freqs, heights, max_peaks=3, n_bands=10)
 
         assert sel_f.size <= 3
         # the pre-fix result was exactly the three weakest, lowest-frequency peaks
@@ -55,14 +51,26 @@ class TestBandSelection:
         assert heights.max() in sel_h
         assert sel_f.max() == pytest.approx(freqs.max())
 
+    @pytest.mark.parametrize("freq_max", [1.0, 3.7, 0.001234, 987.654321, 0.45])
+    def test_highest_peak_survives_logspace_endpoint_rounding(self, freq_max: float) -> None:
+        """freq_max must land in the top band for any value, not just exact ones.
+
+        The upper band edge is ``10 ** log10(freq_max)``, which does not always
+        round-trip to freq_max, so a closed ``<=`` comparison is not sufficient.
+        """
+        freqs = np.array([1e-3, 1e-2, 1e-1, freq_max])
+        heights = np.array([10.0, 20.0, 30.0, 99.0])  # strongest peak is at freq_max
+
+        sel_f, _ = select_peaks_by_frequency_bands(freqs, heights, max_peaks=3, n_bands=3)
+
+        assert freq_max in sel_f
+
     def test_non_positive_frequency_peak_is_not_dropped(self) -> None:
         """A peak at f <= 0 belongs to the first band rather than to no band."""
         freqs = np.array([0.0, 1e-2, 1e-1, 1.0])
         heights = np.array([99.0, 20.0, 30.0, 40.0])  # strongest peak is at DC
 
-        sel_f, sel_h = select_peaks_by_frequency_bands(
-            freqs, heights, max_peaks=3, n_bands=3
-        )
+        sel_f, _ = select_peaks_by_frequency_bands(freqs, heights, max_peaks=3, n_bands=3)
 
         assert 0.0 in sel_f
 
