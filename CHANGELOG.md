@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2026-07-24
+
+### Changed
+
+- Point project URLs, README badges, clone instructions, and the citation entry at `github.com/openfluids/dsgbr` after the repository moved to the openfluids organization.
+
 ## [0.2.0] - 2026-06-11
 
 ### Added
