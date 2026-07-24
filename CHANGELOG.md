@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Restore the highest-frequency peak to band down-selection. The top band was half-open on the right while its upper edge equalled the maximum frequency, so a peak sitting exactly on that edge matched no band and was silently discarded.
+- Rank the over-budget truncation in `select_peaks_by_frequency_bands` by amplitude instead of slicing a frequency-sorted array, which had kept the lowest frequencies regardless of strength.
+- Stop the one-slot-per-band floor from exceeding `max_peaks` when `n_bands > max_peaks`, which forced a truncation that discarded peaks the allotment had already promised.
+- Re-apply the minimum-separation rule after peak refinement. Hill-climbing towards raw-PSD maxima could pull two legally spaced peaks closer than `distance_low`/`distance_high`.
+- Correct the `DSGBR_PARAM_ALIASES` comment, which described a bidirectional mapping the dictionary never contained.
+
+### Changed
+
+- `ulf_max_points=0` now retains no ultra-low-frequency peaks, matching its documented meaning. It previously behaved as unlimited because the cap was skipped on a falsy value. Use `ulf_fmax <= 0` to disable ULF handling entirely.
+- Peaks at non-positive frequencies are assigned to the first band rather than being dropped by every band.
+
+Detection results are unchanged on the benchmark suite, the golden fixtures, and the
+README figure; these paths are reached only by non-default configurations.
+
 ## [0.2.1] - 2026-07-24
 
 ### Changed
