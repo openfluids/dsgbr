@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dsgbr"
-version = "0.2.0"
+version = "0.2.1"
 description = "Dual Savitzky–Golay Baseline Ratio (DSGBR) spectral peak detector"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -78,10 +78,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ricardofrantz/dsgbr"
-Source = "https://github.com/ricardofrantz/dsgbr"
-Tracker = "https://github.com/ricardofrantz/dsgbr/issues"
-Documentation = "https://github.com/ricardofrantz/dsgbr#readme"
+Homepage = "https://github.com/openfluids/dsgbr"
+Source = "https://github.com/openfluids/dsgbr"
+Tracker = "https://github.com/openfluids/dsgbr/issues"
+Documentation = "https://github.com/openfluids/dsgbr#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]

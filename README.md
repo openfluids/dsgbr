@@ -1,8 +1,8 @@
 ![DSGBR banner](assets/readme-banner-v1.png)
 
 [![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
-[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/ricardofrantz/dsgbr#readme)
-[![CI](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/openfluids/dsgbr#readme)
+[![CI](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
@@ -29,7 +29,7 @@ pip install dsgbr
 For development:
 
 ```bash
-git clone https://github.com/ricardofrantz/dsgbr.git
+git clone https://github.com/openfluids/dsgbr.git
 cd dsgbr
 uv pip install -e ".[dev]"
 ```
@@ -206,7 +206,7 @@ If you use DSGBR in your research, please cite:
   author = {Frantz, Ricardo},
   title = {{DSGBR}: Dual Savitzky--Golay Baseline Ratio spectral peak detector},
   year = {2026},
-  url = {https://github.com/ricardofrantz/dsgbr},
+  url = {https://github.com/openfluids/dsgbr},
 }
 ```
 
