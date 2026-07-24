@@ -270,7 +270,7 @@ def _build_search_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
                 RuntimeWarning,
                 stacklevel=2,
             )
-    return cast(np.ndarray, psd.copy())
+    return psd.copy()
 
 
 def _build_baseline_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
