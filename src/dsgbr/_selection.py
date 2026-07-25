@@ -104,8 +104,21 @@ def select_peaks_by_frequency_bands(
 
     candidates: list[np.ndarray] = []
     for i in range(bands):
-        mask = (peak_frequencies >= band_edges[i]) & (peak_frequencies < band_edges[i + 1])
-        candidates.append(np.where(mask)[0])
+        # The outer bands are unbounded so that every peak lands in exactly one band.
+        # Bounding them invites silent drops: peaks below the clamped lower edge match
+        # nothing, and the upper edge is 10**log10(freq_max), which does not always
+        # round-trip to freq_max, so even a closed `<=` can exclude the largest peak.
+        above = (
+            np.ones(peak_frequencies.shape, dtype=bool)
+            if i == 0
+            else peak_frequencies >= band_edges[i]
+        )
+        below = (
+            np.ones(peak_frequencies.shape, dtype=bool)
+            if i == bands - 1
+            else peak_frequencies < band_edges[i + 1]
+        )
+        candidates.append(np.where(above & below)[0])
 
     allotments = _compute_allotments(candidates, max_peaks, bands, strategy)
 
@@ -129,8 +142,12 @@ def select_peaks_by_frequency_bands(
     sel_h = sel_h[freq_order]
 
     if sel_f.size > max_peaks:
-        sel_f = sel_f[:max_peaks]
-        sel_h = sel_h[:max_peaks]
+        # Rank by amplitude, then restore ascending frequency order.  Slicing the
+        # frequency-sorted array directly would keep the lowest frequencies rather
+        # than the strongest peaks.
+        keep = np.sort(np.argsort(sel_h)[::-1][:max_peaks])
+        sel_f = sel_f[keep]
+        sel_h = sel_h[keep]
 
     return sel_f, sel_h
 
@@ -166,11 +183,18 @@ def _compute_allotments(
         for i in range(bands):
             allotments[i] = per_band + (1 if i < remainder else 0)
     else:
+        non_empty = [i for i, cand in enumerate(candidates) if cand.size > 0]
+        # The one-slot-per-band floor must not exceed the budget: with more
+        # non-empty bands than max_peaks it would over-allocate and force a
+        # truncation that discards peaks the allotment had already promised.
+        if len(non_empty) > max_peaks:
+            non_empty = sorted(non_empty, key=lambda i: candidates[i].size, reverse=True)[
+                :max_peaks
+            ]
         remaining = max_peaks
-        for i, cand in enumerate(candidates):
-            if cand.size > 0:
-                allotments[i] = 1
-                remaining -= 1
+        for i in non_empty:
+            allotments[i] = 1
+            remaining -= 1
         if remaining > 0:
             weights = np.array([cand.size for cand in candidates], dtype=float)
             total = weights.sum() if weights.sum() > 0 else 1.0

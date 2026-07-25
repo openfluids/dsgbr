@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dsgbr"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Dual Savitzky–Golay Baseline Ratio (DSGBR) spectral peak detector"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -78,13 +78,17 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ricardofrantz/dsgbr"
-Source = "https://github.com/ricardofrantz/dsgbr"
-Tracker = "https://github.com/ricardofrantz/dsgbr/issues"
-Documentation = "https://github.com/ricardofrantz/dsgbr#readme"
+Homepage = "https://github.com/openfluids/dsgbr"
+Source = "https://github.com/openfluids/dsgbr"
+Tracker = "https://github.com/openfluids/dsgbr/issues"
+Documentation = "https://github.com/openfluids/dsgbr#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# Single source of truth for the version: src/dsgbr/__init__.py
+[tool.setuptools.dynamic]
+version = { attr = "dsgbr.__version__" }
 
 [tool.ruff]
 line-length = 100
@@ -106,7 +110,10 @@ convention = "numpy"
 [tool.mypy]
 pretty = true
 strict = true
-python_version = "3.10"
+# Matches the CI type-check runner. NumPy >= 2.5 ships PEP 695 stubs and requires
+# Python >= 3.12, so a 3.10 target cannot parse the stubs of any NumPy a 3.10 user
+# could install. Runtime compatibility across 3.10-3.14 is enforced by the test matrix.
+python_version = "3.12"
 exclude = ["docs/conf.py", "tests/", "examples/"]
 
 [tool.codespell]

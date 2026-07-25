@@ -116,8 +116,13 @@ class DetectionConfig:
     distance_low: int = 2
     """Minimum bin separation for peaks below switch_frequency."""
 
-    distance_high: int = 1
-    """Minimum bin separation for peaks at or above switch_frequency."""
+    distance_high: int = 5
+    """Minimum bin separation for peaks at or above switch_frequency.
+
+    A value of 1 is not a constraint -- any two distinct bins satisfy it -- so a
+    noisy peak top could be reported as several peaks.  5 removes those split
+    detections without discarding true peaks on the benchmark suite.
+    """
 
     # ==================== ULF GUARDRAIL PARAMETERS ====================
     ulf_fmax: float = 1e-3

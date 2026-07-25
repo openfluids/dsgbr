@@ -15,8 +15,9 @@ import numpy as np
 from dsgbr._config import DetectionConfig
 from dsgbr._detector import dsgbr_detector
 
-#: Bidirectional mapping for DSGBR parameters.
-#: Allows use of either short keys (RT, SW, BWF) or full parameter names.
+#: Short-alias -> canonical-name mapping for DSGBR parameters.
+#: :meth:`DetectionConfig.from_case_info` accepts either the short key or the full
+#: parameter name; this dict records the short forms only, not the reverse direction.
 DSGBR_PARAM_ALIASES: dict[str, str] = {
     # Short -> Long mappings
     "RT": "ratio_threshold",

@@ -115,19 +115,9 @@ def dsgbr_detector(
         )
 
     # Greedy spacing-aware selection (strongest first)
-    order = np.argsort(search_series[candidate_indices])[::-1]
-    accepted: list[int] = []
-    low_distance = int(cfg.distance_low)
-    high_distance = int(cfg.distance_high)
-    switch_frequency = float(cfg.switch_frequency)
-    for idx in order:
-        peak_idx = int(candidate_indices[idx])
-        freq = float(frequencies[peak_idx])
-        min_dist = high_distance if freq >= switch_frequency else low_distance
-        if all(abs(peak_idx - existing) >= min_dist for existing in accepted):
-            accepted.append(peak_idx)
+    accepted_idx = _enforce_spacing(candidate_indices, frequencies, search_series, cfg)
 
-    if not accepted:
+    if accepted_idx.size == 0:
         support["accepted_indices"] = np.array([], dtype=int)
         return (
             (np.array([]), np.array([]), support)
@@ -135,8 +125,12 @@ def dsgbr_detector(
             else (np.array([]), np.array([]))
         )
 
-    accepted_idx = np.array(sorted(set(accepted)), dtype=int)
     accepted_idx = _refine_peak_indices(accepted_idx, psd)
+    # Refinement hill-climbs each index towards the nearest raw-PSD maximum, which can
+    # pull two legally spaced peaks closer than the configured minimum separation, so
+    # the invariant is re-established here.  Rank by the raw PSD to match the series
+    # refinement actually targeted.
+    accepted_idx = _enforce_spacing(accepted_idx, frequencies, psd, cfg)
     accepted_idx = _apply_ulf_guardrail(accepted_idx, frequencies, search_series, cfg)
     support["accepted_indices"] = accepted_idx.copy()
     if accepted_idx.size == 0:
@@ -270,7 +264,7 @@ def _build_search_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
                 RuntimeWarning,
                 stacklevel=2,
             )
-    return cast(np.ndarray, psd.copy())
+    return psd.copy()
 
 
 def _build_baseline_series(psd: np.ndarray, cfg: DetectionConfig) -> np.ndarray:
@@ -343,6 +337,53 @@ def _baseline_window_length(n_points: int, cfg: DetectionConfig) -> int:
     return win
 
 
+def _enforce_spacing(
+    indices: np.ndarray,
+    frequencies: np.ndarray,
+    amplitudes: np.ndarray,
+    cfg: DetectionConfig,
+) -> np.ndarray:
+    """Greedily keep the strongest peaks subject to the minimum-separation rule.
+
+    Candidates are considered strongest-first and kept only when at least
+    ``min_dist`` bins from every already-kept peak.  The separation applied is
+    ``distance_high`` for candidates at or above ``switch_frequency`` and
+    ``distance_low`` below it.
+
+    Parameters
+    ----------
+    indices : numpy.ndarray
+        Candidate peak indices.
+    frequencies : numpy.ndarray
+        Frequency axis, used to select the spacing rule per candidate.
+    amplitudes : numpy.ndarray
+        Series used to rank candidates (strongest first).
+    cfg : DetectionConfig
+        Spacing parameters.
+
+    Returns
+    -------
+    numpy.ndarray
+        Sorted, deduplicated indices satisfying the spacing rule.
+    """
+    if indices.size == 0:
+        return np.array([], dtype=int)
+
+    order = np.argsort(amplitudes[indices])[::-1]
+    accepted: list[int] = []
+    low_distance = int(cfg.distance_low)
+    high_distance = int(cfg.distance_high)
+    switch_frequency = float(cfg.switch_frequency)
+    for pos in order:
+        peak_idx = int(indices[pos])
+        freq = float(frequencies[peak_idx])
+        min_dist = high_distance if freq >= switch_frequency else low_distance
+        if all(abs(peak_idx - existing) >= min_dist for existing in accepted):
+            accepted.append(peak_idx)
+
+    return np.array(sorted(set(accepted)), dtype=int)
+
+
 def _apply_ulf_guardrail(
     indices: np.ndarray,
     frequencies: np.ndarray,
@@ -405,7 +446,10 @@ def _apply_ulf_guardrail(
         return cast(np.ndarray, indices[~ul_mask])
 
     cap = int(cfg.ulf_max_points)
-    if cap and ul_indices.size > cap:
+    # cap == 0 retains no ULF peaks, matching the documented "maximum number of ULF
+    # peaks to retain".  __post_init__ guarantees cap >= 0, and ulf_fmax <= 0 remains
+    # the separate switch for disabling ULF handling entirely.
+    if ul_indices.size > cap:
         order = np.argsort(search_series[ul_indices])[::-1][:cap]
         ul_indices = ul_indices[order]
 

@@ -1,8 +1,8 @@
 ![DSGBR banner](assets/readme-banner-v1.png)
 
 [![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
-[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/ricardofrantz/dsgbr#readme)
-[![CI](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ricardofrantz/dsgbr/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/openfluids/dsgbr#readme)
+[![CI](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
@@ -29,7 +29,7 @@ pip install dsgbr
 For development:
 
 ```bash
-git clone https://github.com/ricardofrantz/dsgbr.git
+git clone https://github.com/openfluids/dsgbr.git
 cd dsgbr
 uv pip install -e ".[dev]"
 ```
@@ -97,9 +97,9 @@ sensitivity study are in [`docs/algorithm.md`](docs/algorithm.md).
 | Scenario      | DSGBR F1      | tuned find_peaks F1 |
 | ------------- | ------------- | ------------------- |
 | clean_tones   | 1.000 ± 0.000 | 1.000 ± 0.000       |
-| dense_lowfreq | 0.658 ± 0.246 | 0.440 ± 0.310       |
+| dense_lowfreq | 0.680 ± 0.253 | 0.440 ± 0.310       |
 | steep_slope   | 0.967 ± 0.103 | 0.872 ± 0.149       |
-| noisy_welch   | 0.447 ± 0.251 | 0.296 ± 0.312       |
+| noisy_welch   | 0.449 ± 0.249 | 0.296 ± 0.312       |
 | no_peaks      | 0.000 ± 0.000 | 0.000 ± 0.000       |
 
 Fresh run: `uv run python -m benchmarks.compare`, 20 evaluation realizations per
@@ -206,7 +206,7 @@ If you use DSGBR in your research, please cite:
   author = {Frantz, Ricardo},
   title = {{DSGBR}: Dual Savitzky--Golay Baseline Ratio spectral peak detector},
   year = {2026},
-  url = {https://github.com/ricardofrantz/dsgbr},
+  url = {https://github.com/openfluids/dsgbr},
 }
 ```
 
