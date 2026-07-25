@@ -25,33 +25,47 @@ For frequencies `f` and PSD `P(f)`, the pipeline runs these stages in order:
 1. **Validate inputs.** Both arrays must be one-dimensional, equal-length,
    finite, with increasing frequencies and non-negative PSD. Violations
    raise `ValueError`; empty inputs return empty results.
+
 1. **Build SEARCH** — a light Savitzky–Golay smooth of the PSD
    (`smooth_window`, default 3; polynomial order `smooth_polyorder`,
    default 2), applied to `log10(P)` by default. SEARCH suppresses
    single-bin noise spikes while keeping peak shapes nearly intact.
+
 1. **Build BASELINE** — a wide rolling median of the *raw* PSD
    (window = `baseline_window_frac` × N, default 0.05, so about N/20 bins),
    also in the log domain by default. The two series are deliberately
    decoupled: changing the search smoothing never changes what counts as
    background.
+
 1. **Form the ratio** `SEARCH / BASELINE` and find local maxima of SEARCH.
    Candidates survive only where the ratio meets `ratio_threshold`
    (default 3.3).
+
 1. **Greedy spacing selection.** Candidates are visited strongest-first;
    each must sit at least `distance_low` bins (default 2) from already
    accepted peaks below `switch_frequency` (default 0.02) and
    `distance_high` bins (default 5) above it. Both values exist to stop one
    physical peak being reported twice: a separation of 1 would be no
    constraint at all, since any two distinct bins satisfy it.
+
+   These are counted in **bins**, so their effect depends on spectral
+   resolution. The defaults were chosen on spectra of 1024-4096 bins; on a
+   much coarser spectrum the same values span a larger fraction of the axis
+   and can reject genuine peaks. If a coarse spectrum returns fewer peaks
+   than expected, lower `distance_high`, or resolve the spectrum more finely
+   (a longer FFT segment) so the defaults regain their intended meaning.
+
 1. **Refine positions.** Each accepted index hill-climbs to the nearest
    local maximum of the *raw* PSD, so reported frequencies and amplitudes
    come from the data, not the smoothed series.
+
 1. **Ultra-low-frequency guardrail.** Peaks below `ulf_fmax` must have a
    Q-factor (centre frequency / FWHM, measured on SEARCH) of at least
    `ulf_min_q`, and at most `ulf_max_points` of them are kept. Near the
    left edge of a spectrum, leakage and detrending residue produce broad
    bumps that pass the ratio test; a sharp genuine line passes the Q test,
    a leakage bump does not.
+
 1. **Band-balanced down-selection.** If more than `max_peaks` survive,
    peaks are reduced across logarithmic frequency bands (`band_strategy`,
    `n_bands`) so the result is not dominated by one crowded region.
@@ -117,6 +131,14 @@ These defaults were recalibrated together with the rolling-median baseline
 against the synthetic benchmark suite in `benchmarks/` (see the validation
 table in the README). The sensitivity study below documents how far each can
 move before performance degrades.
+
+## Performance
+
+The spacing pass is linear in the number of candidate peaks. This only matters for
+spectra that produce thousands of detections: 20 000 candidates take about 19 ms and
+160 000 about 160 ms. Typical spectra with tens to hundreds of peaks complete in well
+under a millisecond, where the cost is dominated by the smoothing and baseline
+filters rather than by peak selection.
 
 ## Parameter sensitivity
 

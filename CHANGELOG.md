@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.7.0] - 2026-07-25
+
+### Added
+
+- Validation against real measured spectra in `benchmarks/real/`. The CWRU bearing
+  recordings carry ground truth that is computed rather than hand-labelled: fault
+  frequencies are fixed multiples of shaft speed set by bearing geometry, and each
+  recording reports its own shaft speed. On the outer-race recording DSGBR recovers
+  8 of 8 BPFO harmonics from 25 peaks, where `scipy.signal.find_peaks` tuned on that
+  same spectrum needs 439 peaks to match it; on the inner-race recording, 6 of 8 BPFI
+  harmonics from 25 peaks against 572.
+
+  The recordings are fetched on demand into `~/.cache/dsgbr/cwru` and checked against
+  a recorded digest. They are not redistributed: CWRU publishes them for research
+  under no explicit open licence, and this package is Apache-2.0. Set
+  `DSGBR_CWRU_DATA_DIR` to relocate the cache or point at an existing copy. Tests
+  that need the data skip when it is absent, so CI remains hermetic.
+
+### Documentation
+
+- `distance_low`/`distance_high` are counted in bins, so their effect depends on
+  spectral resolution. The defaults suit spectra of roughly 1024-4096 bins; on a much
+  coarser spectrum they span a larger fraction of the axis and can reject genuine
+  peaks. Documented in `docs/algorithm.md` along with the two remedies.
+- Performance note for the linear spacing pass, scoped honestly: it matters only for
+  spectra producing thousands of detections.
+
 ## [0.6.0] - 2026-07-25
 
 ### Added

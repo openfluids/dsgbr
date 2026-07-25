@@ -112,6 +112,29 @@ no F1 credit on `no_peaks`. See [`docs/algorithm.md` Parameter
 sensitivity](docs/algorithm.md#parameter-sensitivity) and [`benchmarks/`](benchmarks/)
 for reproduction.
 
+### Real measurements
+
+The scenarios above are synthetic, so every property of the signal is one the test
+author chose. They are complemented by recorded bearing vibration from the [CWRU
+Bearing Data Center](https://engineering.case.edu/bearingdatacenter), where the truth
+is not hand-labelled: fault frequencies are fixed multiples of shaft speed set by
+bearing geometry, and each recording carries its own shaft speed, so the expected
+peaks are computed rather than asserted.
+
+| Recording       | Fault | DSGBR                   | tuned `find_peaks`       |
+| --------------- | ----- | ----------------------- | ------------------------ |
+| 130, outer race | BPFO  | 8/8 harmonics, 25 peaks | 8/8 harmonics, 439 peaks |
+| 105, inner race | BPFI  | 6/8 harmonics, 25 peaks | 6/8 harmonics, 572 peaks |
+
+Both detectors see the identical envelope spectrum, and `find_peaks` is tuned per
+recording while DSGBR runs at defaults. The recall matches; the difference is that
+DSGBR reaches it with roughly twenty times fewer detections.
+
+Reproduce with `uv run --extra tests python -m benchmarks.real.compare`. The
+recordings are downloaded on demand into `~/.cache/dsgbr/cwru` and verified against a
+recorded checksum -- they are not redistributed here. Set `DSGBR_CWRU_DATA_DIR` to
+relocate or reuse an existing copy.
+
 ## Configuration
 
 All parameters are set through `DetectionConfig` or passed as a dictionary
