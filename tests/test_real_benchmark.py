@@ -48,12 +48,7 @@ class TestHarmonicRecall:
 
     def test_bearing_multipliers_are_ordered_as_expected(self) -> None:
         """Geometry fixes the ordering: cage < ball spin < outer race < inner race."""
-        assert (
-            SKF_6205_DE["FTF"]
-            < SKF_6205_DE["BSF"]
-            < SKF_6205_DE["BPFO"]
-            < SKF_6205_DE["BPFI"]
-        )
+        assert SKF_6205_DE["FTF"] < SKF_6205_DE["BSF"] < SKF_6205_DE["BPFO"] < SKF_6205_DE["BPFI"]
 
 
 class TestEnvelopeSpectrum:
@@ -111,7 +106,10 @@ class TestAgainstRealBearings:
             target = SKF_6205_DE["BPFO"] * shaft_hz
             # amplitude carried by the fault series, relative to all detected power
             mask = np.array(
-                [min(abs(p - k * target) / (k * target) for k in range(1, 9)) < 0.015 for p in peaks]
+                [
+                    min(abs(p - k * target) / (k * target) for k in range(1, 9)) < 0.015
+                    for p in peaks
+                ]
             )
             scores[case.tag] = float(heights[mask].sum() / heights.sum()) if peaks.size else 0.0
 

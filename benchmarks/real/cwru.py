@@ -53,12 +53,24 @@ class Case:
 #: Baseline plus one fault of each race.  The healthy recording is the false-alarm
 #: control: a detector that reports fault harmonics there is finding nothing real.
 CASES: tuple[Case, ...] = (
-    Case("97", "healthy baseline", None,
-         "16bf48babcf1c7ac224bc1a81cd9eafdb27e42d5cf559761907e067e8eeadf3c"),
-    Case("105", "inner race fault, 0.007 in", "BPFI",
-         "f80b0ea04fd06b372a0eaec7c056543ea37e4bb4727a5b173d2a5bacd2aa9cab"),
-    Case("130", "outer race fault, 0.007 in", "BPFO",
-         "35a095307d0971477049b343a1b5981dde465a58fb7f233ad89b035068c1717d"),
+    Case(
+        "97",
+        "healthy baseline",
+        None,
+        "16bf48babcf1c7ac224bc1a81cd9eafdb27e42d5cf559761907e067e8eeadf3c",
+    ),
+    Case(
+        "105",
+        "inner race fault, 0.007 in",
+        "BPFI",
+        "f80b0ea04fd06b372a0eaec7c056543ea37e4bb4727a5b173d2a5bacd2aa9cab",
+    ),
+    Case(
+        "130",
+        "outer race fault, 0.007 in",
+        "BPFO",
+        "35a095307d0971477049b343a1b5981dde465a58fb7f233ad89b035068c1717d",
+    ),
 )
 
 
@@ -108,7 +120,7 @@ def fetch(case: Case, *, allow_download: bool = True) -> Path:
 
     path.parent.mkdir(parents=True, exist_ok=True)
     url = f"{BASE_URL}/{case.tag}.mat"
-    urllib.request.urlretrieve(url, path)  # noqa: S310 - fixed https URL, digest checked
+    urllib.request.urlretrieve(url, path)
 
     actual = _digest(path)
     if actual != case.sha256:
@@ -147,7 +159,7 @@ def envelope_spectrum(
     nperseg: int = 32768,
     f_range: tuple[float, float] = (3.0, 1000.0),
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Standard bearing envelope spectrum.
+    """Compute the standard bearing envelope spectrum.
 
     Bearing faults modulate a structural resonance rather than radiating at the fault
     frequency directly, so the fault series appears in the envelope of a band around
@@ -162,9 +174,7 @@ def envelope_spectrum(
     coeffs_b, coeffs_a = butter(4, [band[0] / nyquist, band[1] / nyquist], btype="band")
     envelope = np.abs(hilbert(filtfilt(coeffs_b, coeffs_a, signal)))
 
-    freqs, power = welch(
-        envelope - envelope.mean(), fs=fs, nperseg=nperseg, noverlap=nperseg // 2
-    )
+    freqs, power = welch(envelope - envelope.mean(), fs=fs, nperseg=nperseg, noverlap=nperseg // 2)
     keep = (freqs > f_range[0]) & (freqs < f_range[1])
     return freqs[keep], power[keep]
 

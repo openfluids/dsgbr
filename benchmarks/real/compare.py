@@ -49,7 +49,8 @@ def evaluate(case: Case, *, case_info: dict[str, object] | None = None) -> dict[
     signal, shaft_hz = load_drive_end(case)
     freqs, power = envelope_spectrum(signal)
 
-    peaks, _ = dsgbr_detector(freqs, power, case_info=case_info)
+    detected = dsgbr_detector(freqs, power, case_info=case_info)
+    peaks = detected[0]
 
     fault_hz = SKF_6205_DE[case.fault] * shaft_hz if case.fault else 0.0
     row: dict[str, object] = {
@@ -71,13 +72,13 @@ def evaluate(case: Case, *, case_info: dict[str, object] | None = None) -> dict[
         # No fault seeded: any recovered "fault" series would be a false alarm, so
         # score every bearing series and report the worst offender.
         row["false_alarm"] = max(
-            harmonic_recall(peaks, mult * shaft_hz, n_harmonics=5)
-            for mult in SKF_6205_DE.values()
+            harmonic_recall(peaks, mult * shaft_hz, n_harmonics=5) for mult in SKF_6205_DE.values()
         )
     return row
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Print the recall table for every case."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--case-info",
@@ -96,9 +97,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("-" * 74)
     for case in CASES:
         row = evaluate(case, case_info=case_info)
-        fault_col = (
-            f"{row['fault_recall']}/8" if case.fault else f"FA {row['false_alarm']}/5"
-        )
+        fault_col = f"{row['fault_recall']}/8" if case.fault else f"FA {row['false_alarm']}/5"
         print(
             f"{row['tag']:>5}  {row['description']:<28} {row['n_peaks']:>6} "
             f"{row['fault']:>5} {fault_col:>7} {row['shaft_recall']}/8"
