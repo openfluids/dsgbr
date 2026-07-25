@@ -1,11 +1,17 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2026-07-25
 
 ### Changed
 
-- Relicense from BSD-3-Clause to Apache-2.0, effective from 0.5.0 onward. 0.4.0
-  and earlier releases remain under BSD-3-Clause.
+- Relicense from BSD-3-Clause to Apache-2.0, effective from this release. 0.4.0 and
+  earlier releases remain available under the BSD-3-Clause licence that applied at
+  the time of release.
+- Add `NOTICE` alongside `LICENSE`, following the notice style used across the
+  openfluids repositories, and ship both in the built distributions.
+- Correct the documented `distance_high` default in the README configuration table
+  and `docs/algorithm.md`, which still said 1 after 0.4.0 raised it to 5. The
+  documented defaults and the licence metadata are now cross-checked by tests.
 
 ## [0.4.0] - 2026-07-25
 
