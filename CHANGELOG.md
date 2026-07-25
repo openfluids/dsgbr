@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] - 2026-07-25
+
+### Changed
+
+- Raise the default `distance_high` from 1 to 5 bins. A separation of 1 is not a constraint at all — any two distinct bins satisfy it — so above `switch_frequency` nothing prevented the noisy top of a single broad peak from being reported as several peaks. The README scene reproduced this: one harmonic whose FWHM spans about 14 bins was returned as two detections 4 bins apart.
+
+  The value was chosen on the benchmark suite rather than on any single figure. At 5 the mean false positives fall (0.800 → 0.600 on `dense_lowfreq`, 3.250 → 3.150 on `noisy_welch`) with no loss of true positives, lifting F1 to 0.680 ± 0.253 and 0.449 ± 0.249 respectively. At 8 the false positives fall further but true peaks start disappearing (`dense_lowfreq` mean tp 1.950 → 1.800), so 5 is the point where precision improves for free. `clean_tones`, `steep_slope`, and `no_peaks` are unaffected.
+
+  Detection output changes for anyone relying on the previous default. Pass `distance_high=1` (or `{"DH": 1}`) to restore it.
+
+- Update the golden fixtures accordingly. Three detections were removed across `dense_lowfreq-rt25` and `noisy_welch-rt25`, each one 2 bins from a peak that was retained; no detection was added and no retained value moved.
+
+- Refresh the README validation table and hero figure, which now shows exactly one detection per injected harmonic.
+
 ## [0.3.0] - 2026-07-25
 
 ### Fixed

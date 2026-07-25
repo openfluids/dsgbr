@@ -154,6 +154,36 @@ class TestSpacingInvariant:
             pytest.skip("insufficient peaks detected to assess spacing")
         assert int(np.diff(np.sort(bins)).min()) >= min_dist
 
+    def test_default_distance_high_is_an_actual_constraint(self) -> None:
+        """distance_high=1 is a no-op: any two distinct bins are >= 1 apart."""
+        assert DetectionConfig().distance_high > 1
+
+    def test_broad_peak_is_not_reported_twice(self) -> None:
+        """A single noisy peak must not be split into a doublet.
+
+        The README scene injects ten harmonics whose FWHM spans ~14 bins.  With the
+        old distance_high=1 the noisy top of the last harmonic was reported as two
+        peaks four bins apart.
+        """
+        rng = np.random.default_rng(29)
+        n = 4096
+        freqs = np.logspace(np.log10(0.002), np.log10(1.2), n)
+        baseline = 0.22 + 0.12 / np.sqrt(freqs + 0.01)
+        psd = baseline * rng.lognormal(0.0, 0.30, size=n)
+        truth = 0.045 * np.arange(1, 11)
+        log_f = np.log10(freqs)
+        for t, gain in zip(truth, 26.0 / np.arange(1, 11) ** 0.9, strict=False):
+            psd += baseline * gain * np.exp(-0.5 * ((log_f - np.log10(t)) / 0.004) ** 2)
+
+        peak_f, _ = dsgbr_detector(freqs, psd)
+
+        assert peak_f.size == truth.size, (
+            f"expected one detection per harmonic, got {peak_f.size} for {truth.size}"
+        )
+        # every injected harmonic accounted for exactly once
+        for t in truth:
+            assert np.min(np.abs(peak_f - t)) < 0.01 * t
+
     def test_peaks_are_returned_sorted_and_unique(self) -> None:
         rng = np.random.default_rng(7)
         n = 2000

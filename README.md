@@ -97,9 +97,9 @@ sensitivity study are in [`docs/algorithm.md`](docs/algorithm.md).
 | Scenario      | DSGBR F1      | tuned find_peaks F1 |
 | ------------- | ------------- | ------------------- |
 | clean_tones   | 1.000 ± 0.000 | 1.000 ± 0.000       |
-| dense_lowfreq | 0.658 ± 0.246 | 0.440 ± 0.310       |
+| dense_lowfreq | 0.680 ± 0.253 | 0.440 ± 0.310       |
 | steep_slope   | 0.967 ± 0.103 | 0.872 ± 0.149       |
-| noisy_welch   | 0.447 ± 0.251 | 0.296 ± 0.312       |
+| noisy_welch   | 0.449 ± 0.249 | 0.296 ± 0.312       |
 | no_peaks      | 0.000 ± 0.000 | 0.000 ± 0.000       |
 
 Fresh run: `uv run python -m benchmarks.compare`, 20 evaluation realizations per
