@@ -38,3 +38,6 @@ uv.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Local planning artifacts (never committed)
+plan.md
