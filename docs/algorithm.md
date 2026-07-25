@@ -40,9 +40,9 @@ For frequencies `f` and PSD `P(f)`, the pipeline runs these stages in order:
 1. **Greedy spacing selection.** Candidates are visited strongest-first;
    each must sit at least `distance_low` bins (default 2) from already
    accepted peaks below `switch_frequency` (default 0.02) and
-   `distance_high` bins (default 1) above it. Linear-frequency bins pack
-   low frequencies densely, so the stricter low-frequency spacing avoids
-   reporting one physical peak twice.
+   `distance_high` bins (default 5) above it. Both values exist to stop one
+   physical peak being reported twice: a separation of 1 would be no
+   constraint at all, since any two distinct bins satisfy it.
 1. **Refine positions.** Each accepted index hill-climbs to the nearest
    local maximum of the *raw* PSD, so reported frequencies and amplitudes
    come from the data, not the smoothed series.
@@ -107,7 +107,7 @@ aborting.
 - `baseline_on_log = True`
 - `ratio_threshold = 3.3`
 - `distance_low = 2`
-- `distance_high = 1`
+- `distance_high = 5`
 - `switch_frequency = 0.02`
 - `max_peaks = 25`
 - `band_strategy = "proportional"`

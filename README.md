@@ -124,7 +124,7 @@ supported for concise configuration.
 | `smooth_window`        | SW    | 3            | Savitzky-Golay window for SEARCH (odd, >= 3) |
 | `baseline_window_frac` | BWF   | 0.05         | Baseline window as fraction of data length   |
 | `distance_low`         | DL    | 2            | Min bin separation below `switch_frequency`  |
-| `distance_high`        | DH    | 1            | Min bin separation above `switch_frequency`  |
+| `distance_high`        | DH    | 5            | Min bin separation above `switch_frequency`  |
 | `switch_frequency`     | SF    | 0.02         | Frequency threshold for spacing rules        |
 | `max_peaks`            | MP    | 25           | Maximum peaks returned                       |
 | `smooth_polyorder`     | —     | 2            | Polynomial order for SG filter               |
@@ -212,7 +212,8 @@ If you use DSGBR in your research, please cite:
 
 ## License
 
-BSD 3-Clause. See [LICENSE](LICENSE).
+This project is licensed under Apache-2.0.
+Originally developed by Ricardo A S Frantz. See `LICENSE` and `NOTICE` for license terms and attribution notices.
 
 ## Contributing
 
