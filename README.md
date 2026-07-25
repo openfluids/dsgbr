@@ -4,7 +4,7 @@
 [![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/openfluids/dsgbr#readme)
 [![CI](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **Dual Savitzky-Golay Baseline Ratio (DSGBR)** detects spectral peaks in
 frequency-domain signals. It is built for dense, noisy power spectra from fluid
@@ -213,7 +213,12 @@ If you use DSGBR in your research, please cite:
 ## License
 
 This project is licensed under Apache-2.0.
-Originally developed by Ricardo A S Frantz. See `LICENSE` and `NOTICE` for license terms and attribution notices.
+
+As of v0.5.0, this project is licensed under Apache-2.0. Earlier releases remain
+available under the BSD 3-Clause license that applied at the time of release.
+
+Originally developed by Ricardo A S Frantz. See `LICENSE` and `NOTICE` for license
+terms and attribution notices.
 
 ## Contributing
 

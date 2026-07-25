@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Relicense from BSD-3-Clause to Apache-2.0, effective from 0.5.0 onward. 0.4.0
+  and earlier releases remain under BSD-3-Clause.
+
 ## [0.4.0] - 2026-07-25
 
 ### Changed

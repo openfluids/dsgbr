@@ -57,6 +57,45 @@ def test_readme_config_table_matches_dataclass_defaults() -> None:
     assert checked >= 10, f"only {checked} parameters cross-checked; parsing likely broke"
 
 
+def test_readme_license_badge_matches_pyproject() -> None:
+    """The badge is the most visible licence statement; keep it truthful.
+
+    The Apache-2.0 migration initially left the badge reading BSD-3-Clause while the
+    README's own License section, eight lines below, said Apache-2.0.
+    """
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    declared = re.search(r'^license\s*=\s*"([^"]+)"', pyproject, re.MULTILINE)
+    assert declared, "no license expression found in pyproject.toml"
+    spdx = declared.group(1)
+
+    readme = README.read_text(encoding="utf-8")
+    badge = re.search(
+        r"!\[License\]\(https://img\.shields\.io/badge/license-([^-)]+(?:--[^-)]*)*)", readme
+    )
+    assert badge, "no license badge found in README"
+
+    # shields.io escapes '-' as '--'
+    badge_spdx = badge.group(1).replace("--", "-")
+    assert badge_spdx == spdx, f"README badge says {badge_spdx!r}, pyproject says {spdx!r}"
+
+
+def test_license_file_matches_declared_license() -> None:
+    """LICENSE body must match the SPDX identifier declared in packaging metadata."""
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    spdx = re.search(r'^license\s*=\s*"([^"]+)"', pyproject, re.MULTILINE).group(1)  # type: ignore[union-attr]
+    body = (REPO_ROOT / "LICENSE").read_text(encoding="utf-8")
+
+    markers = {
+        "Apache-2.0": "Apache License",
+        "BSD-3-Clause": "BSD 3-Clause License",
+        "MIT": "MIT License",
+    }
+    marker = markers.get(spdx)
+    if marker is None:
+        pytest.skip(f"no marker configured for {spdx}")
+    assert marker in body, f"pyproject declares {spdx} but LICENSE does not contain {marker!r}"
+
+
 @pytest.mark.parametrize(
     "field",
     ["ratio_threshold", "distance_low", "distance_high", "switch_frequency", "max_peaks"],
