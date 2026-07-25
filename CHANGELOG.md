@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.6.0] - 2026-07-25
+
+### Added
+
+- `interpolate_peaks` (alias `IP`, default `False`) reports peak frequencies at
+  sub-bin accuracy by fitting a parabola through the peak sample and its two
+  neighbours. Measured against the ten-harmonic comb from the README figure, mean
+  relative frequency error falls from 0.0401% to 0.0021% on noiseless data, and
+  from 0.1473% to 0.1306% at the figure's own noise level: the scene is
+  noise-limited rather than grid-limited, so the benefit is largest on clean
+  spectra. Edge peaks and degenerate fits keep the bin frequency, so a peak never
+  moves outside its neighbouring bins.
+
+### Changed
+
+- The greedy spacing pass is no longer quadratic in the candidate count. It tested
+  every accepted peak for each candidate; since the separation rule is
+  one-dimensional, testing only the two nearest neighbours is sufficient. 20 000
+  candidates went from 5.6 s to 15 ms, and 80 000 now complete in 153 ms. Output is
+  unchanged, and the previous formulation is retained in the tests as an
+  equivalence oracle.
+
+Detection output is unchanged: the benchmark suite, the golden fixtures and the
+README figure are all bit-identical to 0.5.0.
+
 ## [0.5.0] - 2026-07-25
 
 ### Changed
