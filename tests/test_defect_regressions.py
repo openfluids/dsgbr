@@ -137,7 +137,7 @@ class TestSpacingPerformance:
         np.testing.assert_array_equal(actual, expected)
 
     def test_large_candidate_set_is_fast(self) -> None:
-        """20k candidates took 5.6 s under the quadratic scan; it is ~15 ms now.
+        """20k candidates took 5.6 s under the quadratic scan; it is ~19 ms now.
 
         The bound is deliberately loose so the test measures complexity rather than
         machine speed -- a return to quadratic behaviour would exceed it by far.

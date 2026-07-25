@@ -12,7 +12,6 @@ The five-stage pipeline:
 from __future__ import annotations
 
 import warnings
-from bisect import bisect_left
 from typing import Any, cast
 
 import numpy as np
@@ -437,24 +436,34 @@ def _enforce_spacing(
         return np.array([], dtype=int)
 
     order = np.argsort(amplitudes[indices])[::-1]
-    accepted: list[int] = []  # kept sorted so only the two neighbours need testing
     low_distance = int(cfg.distance_low)
     high_distance = int(cfg.distance_high)
     switch_frequency = float(cfg.switch_frequency)
+
+    # A candidate is rejected when any accepted peak lies within min_dist bins, so
+    # only a fixed-width window around it matters.  Marking occupancy in a flat
+    # boolean array makes each test O(min_dist) instead of a scan over -- or an
+    # insertion into -- the accepted set, which keeps the pass linear in the
+    # candidate count rather than quadratic.
+    occupied = np.zeros(len(frequencies), dtype=bool)
+    accepted: list[int] = []
+    limit = occupied.size
     for pos in order:
         peak_idx = int(indices[pos])
         freq = float(frequencies[peak_idx])
         min_dist = high_distance if freq >= switch_frequency else low_distance
-        # Separation is one-dimensional: if the nearest accepted peak on each side
-        # is far enough, every other accepted peak is farther still.  Scanning the
-        # whole accepted list instead makes this quadratic in the peak count.
-        slot = bisect_left(accepted, peak_idx)
-        if slot > 0 and peak_idx - accepted[slot - 1] < min_dist:
+        lo = peak_idx - min_dist + 1
+        if lo < 0:
+            lo = 0
+        hi = peak_idx + min_dist
+        if hi > limit:
+            hi = limit
+        if occupied[lo:hi].any():
             continue
-        if slot < len(accepted) and accepted[slot] - peak_idx < min_dist:
-            continue
-        accepted.insert(slot, peak_idx)
+        occupied[peak_idx] = True
+        accepted.append(peak_idx)
 
+    accepted.sort()
     return np.array(accepted, dtype=int)
 
 
