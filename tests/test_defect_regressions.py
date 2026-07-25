@@ -6,11 +6,13 @@ guard behaviour the previous 169 tests did not constrain.
 
 from __future__ import annotations
 
+import time
+
 import numpy as np
 import pytest
 
 from dsgbr import DetectionConfig, dsgbr_detector, select_peaks_by_frequency_bands
-from dsgbr._detector import _apply_ulf_guardrail
+from dsgbr._detector import _apply_ulf_guardrail, _enforce_spacing
 
 
 class TestBandSelection:
@@ -85,6 +87,68 @@ class TestBandSelection:
             )
             assert sel_f.size <= 5, f"budget exceeded with n_bands={n_bands}"
             assert sel_f.size == sel_h.size
+
+
+class TestSpacingPerformance:
+    """The spacing pass must stay sub-quadratic in the candidate count."""
+
+    @staticmethod
+    def _reference(
+        indices: np.ndarray,
+        frequencies: np.ndarray,
+        amplitudes: np.ndarray,
+        cfg: DetectionConfig,
+    ) -> np.ndarray:
+        """The original O(k^2) formulation, kept as an equivalence oracle."""
+        if indices.size == 0:
+            return np.array([], dtype=int)
+        order = np.argsort(amplitudes[indices])[::-1]
+        accepted: list[int] = []
+        for pos in order:
+            peak_idx = int(indices[pos])
+            freq = float(frequencies[peak_idx])
+            min_dist = cfg.distance_high if freq >= cfg.switch_frequency else cfg.distance_low
+            if all(abs(peak_idx - existing) >= min_dist for existing in accepted):
+                accepted.append(peak_idx)
+        return np.array(sorted(set(accepted)), dtype=int)
+
+    @pytest.mark.parametrize("seed", range(8))
+    def test_matches_the_quadratic_reference(self, seed: int) -> None:
+        """The neighbour test must accept exactly what the full scan accepted."""
+        rng = np.random.default_rng(seed)
+        n = int(rng.integers(50, 2000))
+        freqs = np.sort(rng.uniform(1e-4, 1.0, n))
+        amps = rng.random(n)
+        k = int(rng.integers(1, min(n, 300)))
+        indices = np.sort(rng.choice(n, size=k, replace=False))
+        cfg = DetectionConfig(
+            distance_low=int(rng.integers(1, 12)),
+            distance_high=int(rng.integers(1, 12)),
+            switch_frequency=float(rng.uniform(0.0, 1.0)),
+        )
+
+        expected = self._reference(indices, freqs, amps, cfg)
+        actual = _enforce_spacing(indices, freqs, amps, cfg)
+
+        np.testing.assert_array_equal(actual, expected)
+
+    def test_large_candidate_set_is_fast(self) -> None:
+        """20k candidates took 5.6 s under the quadratic scan; it is ~15 ms now.
+
+        The bound is deliberately loose so the test measures complexity rather than
+        machine speed -- a return to quadratic behaviour would exceed it by far.
+        """
+        k, n = 20_000, 200_000
+        freqs = np.linspace(1e-3, 1.0, n)
+        indices = np.arange(0, n, 10)[:k]
+        amps = np.random.default_rng(0).random(n)
+
+        start = time.perf_counter()
+        kept = _enforce_spacing(indices, freqs, amps, DetectionConfig())
+        elapsed = time.perf_counter() - start
+
+        assert kept.size > 0
+        assert elapsed < 2.0, f"spacing pass took {elapsed:.2f}s for {k} candidates"
 
 
 class TestUlfGuardrail:

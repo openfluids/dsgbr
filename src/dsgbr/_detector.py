@@ -12,6 +12,7 @@ The five-stage pipeline:
 from __future__ import annotations
 
 import warnings
+from bisect import bisect_left
 from typing import Any, cast
 
 import numpy as np
@@ -370,7 +371,7 @@ def _enforce_spacing(
         return np.array([], dtype=int)
 
     order = np.argsort(amplitudes[indices])[::-1]
-    accepted: list[int] = []
+    accepted: list[int] = []  # kept sorted so only the two neighbours need testing
     low_distance = int(cfg.distance_low)
     high_distance = int(cfg.distance_high)
     switch_frequency = float(cfg.switch_frequency)
@@ -378,10 +379,17 @@ def _enforce_spacing(
         peak_idx = int(indices[pos])
         freq = float(frequencies[peak_idx])
         min_dist = high_distance if freq >= switch_frequency else low_distance
-        if all(abs(peak_idx - existing) >= min_dist for existing in accepted):
-            accepted.append(peak_idx)
+        # Separation is one-dimensional: if the nearest accepted peak on each side
+        # is far enough, every other accepted peak is farther still.  Scanning the
+        # whole accepted list instead makes this quadratic in the peak count.
+        slot = bisect_left(accepted, peak_idx)
+        if slot > 0 and peak_idx - accepted[slot - 1] < min_dist:
+            continue
+        if slot < len(accepted) and accepted[slot] - peak_idx < min_dist:
+            continue
+        accepted.insert(slot, peak_idx)
 
-    return np.array(sorted(set(accepted)), dtype=int)
+    return np.array(accepted, dtype=int)
 
 
 def _apply_ulf_guardrail(
