@@ -136,6 +136,7 @@ supported for concise configuration.
 | `ulf_fmax`             | —     | 0.001        | ULF band upper frequency limit               |
 | `ulf_min_q`            | —     | 9.0          | Minimum Q-factor for ULF peaks               |
 | `ulf_max_points`       | —     | 5            | Maximum ULF peaks to retain                  |
+| `interpolate_peaks`    | IP    | False        | Sub-bin peak positions via parabolic fit     |
 
 ## Advanced usage
 

@@ -134,6 +134,17 @@ class DetectionConfig:
     ulf_max_points: int = 5
     """Maximum number of ULF peaks to retain (ranked by amplitude)."""
 
+    # ==================== POSITIONING PARAMETERS ====================
+    interpolate_peaks: bool = False
+    """Refine reported peak frequencies to sub-bin accuracy.
+
+    Detected frequencies are otherwise quantised to the frequency grid, so a peak
+    lying between two bins is reported at the nearer one.  When enabled, a parabola
+    is fitted through the peak bin and its two neighbours (in log amplitude, where a
+    resonance is closest to parabolic) and the vertex gives the position.  Reported
+    heights are unaffected: they remain the raw PSD value at the peak bin.
+    """
+
     # ==================== SELECTION PARAMETERS ====================
     max_peaks: int = 25
     """Maximum number of peaks to return from detection."""
@@ -275,6 +286,7 @@ class DetectionConfig:
             "ulf_fmax": (float, ("ulf_fmax",)),
             "ulf_min_q": (float, ("ulf_min_q",)),
             "ulf_max_points": (int, ("ulf_max_points",)),
+            "interpolate_peaks": (bool, ("interpolate_peaks", "IP")),
             "max_peaks": (int, ("max_peaks", "MP")),
             "band_strategy": (str, ("band_strategy",)),
             "n_bands": (int, ("n_bands",)),

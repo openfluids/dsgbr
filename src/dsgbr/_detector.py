@@ -165,10 +165,16 @@ def dsgbr_detector(
     peak_f = peak_f[order]
     peak_h = peak_h[order]
 
-    support["peak_frequencies"] = peak_f
-    support["peak_heights"] = peak_h
     final_indices = np.array([int(np.argmin(np.abs(frequencies - f))) for f in peak_f], dtype=int)
     support["accepted_indices"] = final_indices
+
+    # Applied last, once every index-based stage has run, so nothing downstream can
+    # depend on the refined positions and support["accepted_indices"] stays exact.
+    if cfg.interpolate_peaks:
+        peak_f = _interpolate_peak_frequencies(final_indices, frequencies, search_series)
+
+    support["peak_frequencies"] = peak_f
+    support["peak_heights"] = peak_h
 
     if return_support:
         return peak_f, peak_h, support
@@ -336,6 +342,66 @@ def _baseline_window_length(n_points: int, cfg: DetectionConfig) -> int:
     if win % 2 == 0:
         win += 1
     return win
+
+
+def _interpolate_peak_frequencies(
+    indices: np.ndarray, frequencies: np.ndarray, series: np.ndarray
+) -> np.ndarray:
+    """Refine peak positions to sub-bin accuracy by parabolic interpolation.
+
+    A peak whose true position falls between two bins is otherwise reported at the
+    nearer bin, so the error is bounded below only by the grid spacing.  Fitting a
+    parabola through the peak sample and its two neighbours and taking the vertex
+    recovers most of that offset.  The fit is done on log amplitude, where a
+    resonance is closer to parabolic than in linear amplitude, and on log frequency
+    when the grid is positive, so geometric spacing is handled correctly.
+
+    Edge peaks and degenerate fits fall back to the bin frequency, so the result is
+    never worse than the unrefined position.
+
+    Parameters
+    ----------
+    indices : numpy.ndarray
+        Peak indices into *frequencies* and *series*.
+    frequencies : numpy.ndarray
+        Frequency axis.
+    series : numpy.ndarray
+        Amplitude series the peaks were located on.
+
+    Returns
+    -------
+    numpy.ndarray
+        Refined peak frequencies, same length as *indices*.
+    """
+    indices = np.asarray(indices, dtype=int)
+    if indices.size == 0:
+        return np.array([], dtype=float)
+
+    upper = series.size - 1
+    log_grid = bool(np.all(frequencies > 0))
+    axis = np.log10(frequencies) if log_grid else np.asarray(frequencies, dtype=float)
+
+    refined = np.empty(indices.size, dtype=float)
+    for slot, idx in enumerate(indices):
+        refined[slot] = axis[idx]
+        if idx <= 0 or idx >= upper:
+            continue  # no neighbour on one side
+
+        left, centre, right = (float(series[idx - 1]), float(series[idx]), float(series[idx + 1]))
+        if left > 0.0 and centre > 0.0 and right > 0.0:
+            left, centre, right = np.log10(left), np.log10(centre), np.log10(right)
+
+        denominator = left - 2.0 * centre + right
+        if denominator == 0.0:
+            continue
+        delta = 0.5 * (left - right) / denominator
+        if not np.isfinite(delta) or abs(delta) > 0.5:
+            continue  # not a well-formed maximum; keep the bin position
+
+        step = axis[idx + 1] - axis[idx] if delta >= 0.0 else axis[idx] - axis[idx - 1]
+        refined[slot] = axis[idx] + delta * step
+
+    return np.power(10.0, refined) if log_grid else refined
 
 
 def _enforce_spacing(

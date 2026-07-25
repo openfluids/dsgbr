@@ -12,7 +12,11 @@ import numpy as np
 import pytest
 
 from dsgbr import DetectionConfig, dsgbr_detector, select_peaks_by_frequency_bands
-from dsgbr._detector import _apply_ulf_guardrail, _enforce_spacing
+from dsgbr._detector import (
+    _apply_ulf_guardrail,
+    _enforce_spacing,
+    _interpolate_peak_frequencies,
+)
 
 
 class TestBandSelection:
@@ -149,6 +153,82 @@ class TestSpacingPerformance:
 
         assert kept.size > 0
         assert elapsed < 2.0, f"spacing pass took {elapsed:.2f}s for {k} candidates"
+
+
+class TestSubBinInterpolation:
+    """Optional sub-bin peak positioning."""
+
+    @staticmethod
+    def _comb(noise_sigma: float, seed: int = 29) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rng = np.random.default_rng(seed)
+        n = 4096
+        freqs = np.logspace(np.log10(0.002), np.log10(1.2), n)
+        baseline = 0.22 + 0.12 / np.sqrt(freqs + 0.01)
+        psd = baseline * rng.lognormal(0.0, noise_sigma, size=n) if noise_sigma > 0 else baseline
+        truth = 0.045 * np.arange(1, 11)
+        log_f = np.log10(freqs)
+        for t, gain in zip(truth, 26.0 / np.arange(1, 11) ** 0.9, strict=False):
+            psd = psd + baseline * gain * np.exp(-0.5 * ((log_f - np.log10(t)) / 0.004) ** 2)
+        return freqs, psd, truth
+
+    @staticmethod
+    def _mean_relative_error(peaks: np.ndarray, truth: np.ndarray) -> float:
+        return float(np.mean([abs(p - truth[np.argmin(np.abs(truth - p))]) / p for p in peaks]))
+
+    def test_disabled_by_default(self) -> None:
+        """Existing callers must see bin-quantised positions unless they opt in."""
+        assert DetectionConfig().interpolate_peaks is False
+
+        freqs, psd, _ = self._comb(noise_sigma=0.05)
+        plain, _ = dsgbr_detector(freqs, psd)
+        explicit_off, _ = dsgbr_detector(freqs, psd, case_info={"interpolate_peaks": False})
+
+        np.testing.assert_array_equal(plain, explicit_off)
+
+    def test_beats_grid_quantisation_without_noise(self) -> None:
+        """On a noiseless comb the error is grid-limited, so interpolation wins big."""
+        freqs, psd, truth = self._comb(noise_sigma=0.0)
+
+        binned, _ = dsgbr_detector(freqs, psd)
+        refined, _ = dsgbr_detector(freqs, psd, case_info={"IP": True})
+
+        assert refined.size == binned.size
+        binned_err = self._mean_relative_error(binned, truth)
+        refined_err = self._mean_relative_error(refined, truth)
+        assert refined_err < binned_err / 5.0, (
+            f"expected a large gain on noiseless data: {binned_err:.5f} -> {refined_err:.5f}"
+        )
+
+    def test_never_moves_a_peak_more_than_one_bin(self) -> None:
+        """A parabola vertex is bounded to half a bin; guard against wild fits."""
+        freqs, psd, _ = self._comb(noise_sigma=0.25)
+
+        binned, _ = dsgbr_detector(freqs, psd)
+        refined, _ = dsgbr_detector(freqs, psd, case_info={"IP": True})
+
+        assert refined.size == binned.size
+        for before, after in zip(binned, refined, strict=False):
+            idx = int(np.argmin(np.abs(freqs - before)))
+            lo = freqs[max(0, idx - 1)]
+            hi = freqs[min(freqs.size - 1, idx + 1)]
+            assert lo <= after <= hi, f"peak moved outside its neighbouring bins: {after}"
+
+    def test_edge_peaks_fall_back_to_the_bin_frequency(self) -> None:
+        """Peaks on the first or last bin have no neighbour pair to fit."""
+        freqs = np.linspace(0.001, 1.0, 64)
+        series = np.ones_like(freqs)
+        series[0] = 9.0
+        series[-1] = 9.0
+        indices = np.array([0, freqs.size - 1], dtype=int)
+
+        refined = _interpolate_peak_frequencies(indices, freqs, series)
+
+        np.testing.assert_allclose(refined, freqs[indices])
+
+    def test_empty_input_returns_empty(self) -> None:
+        freqs = np.linspace(0.001, 1.0, 32)
+        refined = _interpolate_peak_frequencies(np.array([], dtype=int), freqs, np.ones_like(freqs))
+        assert refined.size == 0
 
 
 class TestUlfGuardrail:
