@@ -5,15 +5,13 @@
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`dsgbr` detects spectral peaks in dense, noisy power spectra that slope over
-several decades — the case where a fixed prominence threshold either drowns in
-low-frequency power or misses everything at high frequency. It is built for
-frequency-domain signals from fluid dynamics, vibration analysis, and related
-experimental work.
-
-The name is the method: a **dual Savitzky-Golay baseline ratio**, a
-Savitzky-Golay search scored against a rolling-median baseline rather than
-against a fixed threshold.
+`dsgbr` — the **Dual Savitzky-Golay Baseline Ratio** — detects spectral peaks in
+frequency-domain signals. It is built for dense, noisy power spectra from fluid
+dynamics, vibration analysis, and related experimental work, where spectra slope
+over several decades and a fixed prominence threshold either drowns in
+low-frequency power or misses everything at high frequency. The method scores a
+Savitzky-Golay search against a rolling-median baseline instead, so the
+threshold follows the spectrum down its slope.
 
 ![DSGBR detection example](docs/figures/readme_detection.png)
 
