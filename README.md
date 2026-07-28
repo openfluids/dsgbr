@@ -1,10 +1,10 @@
 ![DSGBR banner](assets/readme-banner-v1.png)
 
-[![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
-[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/openfluids/dsgbr#readme)
 [![CI](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-README-blue.svg)](https://github.com/openfluids/dsgbr#readme)
 
 **Dual Savitzky-Golay Baseline Ratio (DSGBR)** detects spectral peaks in
 frequency-domain signals. It is built for dense, noisy power spectra from fluid
