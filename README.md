@@ -1,4 +1,4 @@
-![dsgbr banner](https://raw.githubusercontent.com/openfluids/dsgbr/main/assets/readme-banner-v2.jpg)
+![dsgbr banner](https://raw.githubusercontent.com/openfluids/dsgbr/main/assets/readme-banner-v3.jpg)
 
 [![CI](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/dsgbr/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/dsgbr.svg)](https://pypi.org/project/dsgbr/)
