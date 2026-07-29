@@ -81,12 +81,11 @@ at 65 px and `fftkit` at 112 px, a 1.7x spread.
 
 ## Measured against the previous banner
 
-| metric | previous | this one |
-|---|---|---|
-| wordmark point size | 65–112 px across the family | 96 px everywhere |
-| wordmark placement spread | 123 px | 13 px |
-| ground black point spread | 14.8 | 4.7 |
-| accent saturation | 125.7 | 139.0 |
+| metric                    | previous                    | this one         |
+| ------------------------- | --------------------------- | ---------------- |
+| wordmark point size       | 65–112 px across the family | 96 px everywhere |
+| wordmark placement spread | 123 px                      | 13 px            |
+| ground black point spread | 14.8                        | 4.7              |
+| accent saturation         | 125.7                       | 139.0            |
 
 Format: 1408x469 (3:1), JPEG quality 95, no chroma subsampling.
-
