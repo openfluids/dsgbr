@@ -1,0 +1,44 @@
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Type checking / linting
+.mypy_cache/
+.ruff_cache/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Generated data
+*.npz
+*.png
+!docs/figures/*.png
+!assets/*.png
+benchmarks/results.json
+benchmarks/sensitivity.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Lock files
+uv.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local planning artifacts (never committed)
+plan.md
+LEDGER.md
