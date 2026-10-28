@@ -10,8 +10,8 @@ readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-authors = [{ name = "Ricardo Frantz", email = "rasfrantz@gmail.com" }]
-maintainers = [{ name = "Ricardo Frantz", email = "rasfrantz@gmail.com" }]
+authors = [{ name = "Ricardo Frantz" }]
+maintainers = [{ name = "Ricardo Frantz" }]
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
