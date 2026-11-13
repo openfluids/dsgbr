@@ -5,8 +5,8 @@
 [![Python](https://img.shields.io/pypi/pyversions/dsgbr.svg)](https://pypi.org/project/dsgbr/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`dsgbr` — the **Dual Savitzky-Golay Baseline Ratio** — detects spectral peaks in
-frequency-domain signals. It is built for dense, noisy power spectra from fluid
+`dsgbr` detects spectral peaks in frequency-domain signals with the **Dual
+Savitzky-Golay Baseline Ratio** method. It is built for dense, noisy power spectra from fluid
 dynamics, vibration analysis, and related experimental work, where spectra slope
 over several decades and a fixed prominence threshold either drowns in
 low-frequency power or misses everything at high frequency. The method scores a
